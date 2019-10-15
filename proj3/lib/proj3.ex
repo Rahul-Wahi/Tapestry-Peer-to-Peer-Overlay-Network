@@ -75,7 +75,8 @@ defmodule Proj3.Tapestry do
     prefix = String.slice(nodeid, 0..level-1)
     filterNodeids = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, prefix) end)
     nodeids = nodeids -- filterNodeids
-    routing_table ++ [Enum.take_random(nodeids, 16)]
+    #routing_table ++ [Enum.take_random(nodeids, 16)]
+    routing_table ++ [find_entries(nodeids , [], 0, String.slice(prefix, 0..-2))]
   end
   defp nodeid_routing_table(nodeids, nodeid, level, routing_table) do
     #String.starts_with?("elixir", "eli")
@@ -84,11 +85,44 @@ defmodule Proj3.Tapestry do
     level = level + 1
     filterNodeids = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, prefix) end)
     nodeids = nodeids -- filterNodeids
-    routing_table =  routing_table ++ [Enum.take_random(nodeids, 16)]
+    #routing_table =  routing_table ++ [Enum.take_random(nodeids, 16)]
+    #To get the i entry, prefix : remove last character beacause we need prefix for this level
+    routing_table =  routing_table ++ [find_entries(nodeids , [], 0, String.slice(prefix, 0..-2))]
+
    # IO.puts level;
     #IO.puts nodeid;
     nodeid_routing_table(filterNodeids, nodeid, level, routing_table)
     #IO.puts level;
+  end
+
+   #will fillup the 1st,2nd,3rd...16th entry
+   #nodeid: nodeis to filter, list: resulting list, i -> ith entry, skipi: value of i to skip matching the digit of root node
+   defp find_entries(nodeids,list,i, prefix) when i>=15 do
+     if  i > 15 do
+      list
+     else
+      filterNodeids = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, prefix<>Integer.to_string(i, 16)) end)
+      if length(filterNodeids) > 0 do
+         list ++ [Enum.random(filterNodeids)]
+      else
+        list
+      end
+    end
+    
+    
+   end
+  #will fillup the 1st,2nd,3rd...16th entry
+  defp find_entries(nodeids,list,i, prefix) do
+    
+    filterNodeids = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, prefix<>Integer.to_string(i,16)) end)
+    nodeids = nodeids -- filterNodeids
+    if length(filterNodeids) > 0 do
+      list = list ++ [Enum.random(filterNodeids)]
+      find_entries(nodeids,list,i+1, prefix)
+    else
+      find_entries(nodeids,list,i+1, prefix)
+    end
+   
   end
 
 end

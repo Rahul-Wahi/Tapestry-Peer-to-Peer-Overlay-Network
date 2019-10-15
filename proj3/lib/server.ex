@@ -2,7 +2,7 @@ defmodule Tapestry  do
 use GenServer
 
 def start_link(n) do
-   GenServer.start_link(__MODULE__, %{routing_table: [],nodeid: "",counter: 0},name: String.to_atom(Integer.to_string(n)) )
+   GenServer.start_link(__MODULE__, %{routing_table: [],nodeid: "",objectids: []},name: String.to_atom(Integer.to_string(n)) )
   
 end
 
@@ -23,6 +23,10 @@ def set_state(pid, nodeid, routing_table) do
 end
 
 
+def set_objectds(pid , objectids) do  
+  GenServer.cast(pid, {:set_state,objectids})
+end
+
 #to add neighbours to the existing list
 def handle_cast({:set_state,routing_table_value,node_id} ,%{routing_table: _list, nodeid: _} = state) do
 
@@ -31,7 +35,13 @@ def handle_cast({:set_state,routing_table_value,node_id} ,%{routing_table: _list
   
 end
 
+#to add neighbours to the existing list
+def handle_cast({:set_objectds, new_objectid_list} ,%{objectids: objectid_list} = state) do
 
+  
+  {:noreply,%{state | objectids: objectid_list ++ new_objectid_list}  }
+  
+end
 
 
 def handle_call(:get, _from, state) do
