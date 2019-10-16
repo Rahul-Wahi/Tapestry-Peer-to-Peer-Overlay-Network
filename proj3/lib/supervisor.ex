@@ -13,7 +13,7 @@ defmodule MySupervisor do
     children = Enum.map(1..arg1, fn(n) ->
 
      
-        worker(Tapestry, [n], [id: n, restart: :transient, shutdown: :infinity])
+        worker(Tapestry, [Proj3.Tapestry.generate_id( Integer.to_string(n) ) ], [id: Proj3.Tapestry.generate_id( Integer.to_string(n) ), restart: :transient, shutdown: :infinity])
       
 
     end)

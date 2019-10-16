@@ -23,10 +23,18 @@ defmodule Proj3.Tapestry do
         IO.puts "rahul"
         {:ok, _pid} =   MySupervisor.start_link([noOfNodes])
         set_routing_table(nodeids)
-        pid = Process.whereis(String.to_atom(Integer.to_string(2)) )
-        IO.inspect Tapestry.get(pid)
-        #IO.inspect filter_nodeid(nodeids, Enum.at(nodeids,0), 1 , [])
+        pid = Process.whereis(String.to_atom(Enum.at(nodeids,0)) )
+        Tapestry.route_to_node(pid, Enum.at(nodeids,5))
         
+        
+       # IO.inspect Tapestry.get(pid)
+        #pid  = Process.whereis(String.to_atom("C097638F92DE80BA8D6C696B26E6E601A5F61EB7"))
+        #IO.inspect Tapestry.get(pid)
+        IO.puts Enum.at(nodeids,5)
+        Enum.each(nodeids, fn x -> pid = Process.whereis(String.to_atom( x))
+        IO.inspect Tapestry.get(pid) end)
+        #IO.inspect filter_nodeid(nodeids, Enum.at(nodeids,0), 1 , [])
+       # IO.puts String.length(lcp(["ra","aaa"]))
        #failure_percentage = String.to_integer(failure_percentage)
         #noOfFailedNodes = trunc(failure_percentage*noOfNodes/100)
         #algorihm = "gossip"
@@ -50,9 +58,9 @@ defmodule Proj3.Tapestry do
     #{:ok, pid}
     
   #end
-  
+
   #pass string to this method
-  defp generate_id(value) do
+  def generate_id(value) do
     :crypto.hash(:sha, value)|>Base.encode16
   end
 
@@ -65,7 +73,7 @@ defmodule Proj3.Tapestry do
     
     Enum.each(1..length(nodeids), fn node_number -> 
     nodeid = Enum.at(nodeids, node_number-1)
-    pid = Process.whereis(String.to_atom(Integer.to_string(node_number)) )
+    pid = Process.whereis(String.to_atom(nodeid) )
     Tapestry.set_state(pid,nodeid, nodeid_routing_table(nodeids,nodeid, 1, []) ) end)
   end
 
