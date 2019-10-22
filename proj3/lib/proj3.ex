@@ -18,21 +18,28 @@ defmodule Proj3.Tapestry do
       #end
     
         noOfNodes = String.to_integer(noOfNodes)
+        numRequests = String.to_integer(numRequests)
         nodeids = generate_nodeids(noOfNodes) 
-        IO.inspect nodeids
-        IO.puts "rahul"
-        {:ok, _pid} =   MySupervisor.start_link([noOfNodes])
+        #IO.inspect nodeids
+        #IO.puts "rahul"
+        {:ok, _pid} =   MySupervisor.start_link([noOfNodes,numRequests])
         set_routing_table(nodeids)
         pid = Process.whereis(String.to_atom(Enum.at(nodeids,0)) )
         Tapestry.route_to_node(pid, Enum.at(nodeids,5))
+        NodeInfo.initiate_requests(noOfNodes, numRequests)
         
         
        # IO.inspect Tapestry.get(pid)
         #pid  = Process.whereis(String.to_atom("C097638F92DE80BA8D6C696B26E6E601A5F61EB7"))
         #IO.inspect Tapestry.get(pid)
-        IO.puts Enum.at(nodeids,5)
-        Enum.each(nodeids, fn x -> pid = Process.whereis(String.to_atom( x))
-        IO.inspect Tapestry.get(pid) end)
+        #IO.puts Enum.at(nodeids,5)
+       # Enum.each(nodeids, fn x -> pid = Process.whereis(String.to_atom( x))
+        #IO.inspect Tapestry.get(pid) end)
+        #:timer.sleep(2000)
+        #{_, maxhop_count} = NodeInfo.get()
+        #IO.puts "kar na print"
+        #IO.puts maxhop_count
+        print_maxhop(0)
         #IO.inspect filter_nodeid(nodeids, Enum.at(nodeids,0), 1 , [])
        # IO.puts String.length(lcp(["ra","aaa"]))
        #failure_percentage = String.to_integer(failure_percentage)
@@ -60,19 +67,18 @@ defmodule Proj3.Tapestry do
   #end
 
   #pass string to this method
-  def generate_id(value) do
-    :crypto.hash(:sha, value)|>Base.encode16
-  end
+  
 
   defp generate_nodeids(noOfNodes) do
      
-    Enum.map(1..noOfNodes,fn x -> generate_id(Integer.to_string(x)) end)
+    Enum.map(1..noOfNodes,fn x -> Generic.generate_id(Integer.to_string(x)) end)
   end
 
   defp set_routing_table(nodeids) do
     
     Enum.each(1..length(nodeids), fn node_number -> 
     nodeid = Enum.at(nodeids, node_number-1)
+    nodeids  = nodeids -- [nodeid]
     pid = Process.whereis(String.to_atom(nodeid) )
     Tapestry.set_state(pid,nodeid, nodeid_routing_table(nodeids,nodeid, 1, []) ) end)
   end
@@ -81,8 +87,8 @@ defmodule Proj3.Tapestry do
     #String.starts_with?("elixir", "eli")
     #Enum.filter(nodeids, fn nodeid -> end)
     prefix = String.slice(nodeid, 0..level-1)
-    filterNodeids = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, prefix) end)
-    nodeids = nodeids -- filterNodeids
+    ##filterNodeids = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, prefix) end)
+    ##nodeids = nodeids -- filterNodeids
     #routing_table ++ [Enum.take_random(nodeids, 16)]
     routing_table ++ [find_entries(nodeids , [], 0, String.slice(prefix, 0..-2))]
   end
@@ -92,7 +98,7 @@ defmodule Proj3.Tapestry do
     prefix = String.slice(nodeid, 0..level-1)
     level = level + 1
     filterNodeids = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, prefix) end)
-    nodeids = nodeids -- filterNodeids
+    ##nodeids = nodeids -- filterNodeids
     #routing_table =  routing_table ++ [Enum.take_random(nodeids, 16)]
     #To get the i entry, prefix : remove last character beacause we need prefix for this level
     routing_table =  routing_table ++ [find_entries(nodeids , [], 0, String.slice(prefix, 0..-2))]
@@ -131,6 +137,20 @@ defmodule Proj3.Tapestry do
       find_entries(nodeids,list,i+1, prefix)
     end
    
+  end
+
+  def print_maxhop(condition) when condition == 1 do
+    {_remaining_requests, maxhop_count} = NodeInfo.get()
+    IO.puts maxhop_count
+  end
+
+  def print_maxhop(_condition) do
+    {remaining_requests, _maxhop_count} = NodeInfo.get()
+    if remaining_requests >= 0 do
+      print_maxhop(0)
+    else
+      print_maxhop(1)
+    end
   end
 
 end

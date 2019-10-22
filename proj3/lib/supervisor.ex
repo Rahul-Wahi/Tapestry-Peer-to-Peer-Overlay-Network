@@ -8,15 +8,17 @@ defmodule MySupervisor do
     Supervisor.start_link(__MODULE__,init_arg)
   end
 
-  def init([arg1]) do
+  def init([arg1, arg2]) do
     
     children = Enum.map(1..arg1, fn(n) ->
 
      
-        worker(Tapestry, [Proj3.Tapestry.generate_id( Integer.to_string(n) ) ], [id: Proj3.Tapestry.generate_id( Integer.to_string(n) ), restart: :transient, shutdown: :infinity])
+        worker(Tapestry, [Generic.generate_id( Integer.to_string(n) ) ], [id: Generic.generate_id( Integer.to_string(n) ), restart: :transient, shutdown: :infinity])
       
 
     end)
+
+    children = children ++ [worker(NodeInfo , [arg1, arg2] , [id: NodeInfo, restart: :transient, shutdown: :infinity])]
 
     #children = children ++ [worker(NodeInfo , [] , [id: NodeInfo, restart: :transient, shutdown: :infinity])]
 
