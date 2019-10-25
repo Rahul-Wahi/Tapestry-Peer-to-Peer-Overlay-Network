@@ -28,18 +28,15 @@ defmodule Proj3.Tapestry do
         # 10% of the nodes will be added later to the network
         noOfInsertNodes = floor(noOfNodes*0.1)
         insert_nodeids = if noOfInsertNodes > 0, do: Enum.take_random(nodeids, noOfInsertNodes), else: []
-        IO.inspect insert_nodeids
-        IO.inspect length(insert_nodeids)
-
         # remaining nodes to add for now
         nodeids = nodeids -- insert_nodeids
-        IO.inspect nodeids
-        IO.inspect length(nodeids)
-
-        IO.inspect insert_nodes(insert_nodeids, nodeids)
         ##--Wins--##
 
         set_routing_table(nodeids)
+        ##--Wins--##
+        # new list of nodeIDs after adding those 10% nodes
+        nodeids = insert_nodes(insert_nodeids, nodeids)
+        ##--Wins--##
         pid = Process.whereis(String.to_atom(Enum.at(nodeids,0)) )
         Tapestry.route_to_node(pid, Enum.at(nodeids,5))
         NodeInfo.initiate_requests(noOfNodes, numRequests)
@@ -170,27 +167,65 @@ defmodule Proj3.Tapestry do
   end
 
   ##--Wins--##
-  def insert_nodes(insert_nodeids, nodeids) do
-    Enum.map(insert_nodeids, fn addnode -> 
-      surrogate_node(addnode, nodeids)
+  def insert_nodes([], nodeids) do
+    nodeids
+  end
+
+  def insert_nodes([addnode | insert_nodeids], nodeids) do
+    surrogate_node(addnode, nodeids)
+    insert_nodes(insert_nodeids, nodeids ++ [addnode]) # Added the new node to the exisiting nodes list
+  end
+
+  defp set_newnode_dht(nodeid, nodeids) do
+    pid = Process.whereis(String.to_atom(nodeid))
+    Tapestry.set_state(pid, nodeid, nodeid_routing_table(nodeids, nodeid, 1, []))
+  end
+
+  defp update_needToKnow_nodesStates(addnode, nodeids, lvl) do
+    Enum.each(nodeids, fn nodeid -> 
+      pid = Process.whereis(String.to_atom(nodeid))
+      node_state = Tapestry.get(pid)
+      Tapestry.set_state(pid, nodeid, update_routing_table(addnode, node_state[:routing_table], lvl))
     end)
   end
 
-  def surrogate_node(addnode, nodeids) do # multicasts the message for the incoming node
-    find_closest_entry(addnode, nodeids, 0) # Initiating with "lvl 1" match, so i = 0
+  defp update_routing_table(addnode, routing_table, lvl) do
+    # insert the nodeID into the pth level i.e. Index p-1 of the Routing Table, if there is space
+    # then go on inserting the nodeID to lower-levels also, if there is space
+    new_table = for i <- 0..lvl-1 do
+      lvl_list = Enum.at(routing_table, i)
+      if length(lvl_list) < 16 do
+        lvl_list ++ [addnode]
+      else
+        lvl_list
+      end
+    end
+    new_table ++ Enum.slice(routing_table, lvl..-1) # new_routing_table
+  end
+
+  def surrogate_node(addnode, nodeids) do 
+    # multicasts the message for the incoming node
+    {needToKnow_nodes, lvl} = find_closest_entries(addnode, nodeids, 0) # Initiating with "lvl 1" match, so i = 0
+    _root_node = close(addnode, needToKnow_nodes, lvl-1, 15, List.first(needToKnow_nodes)) 
+    # max_diff is 15, default closest = first(nodeids)
+    #######
+    # prefix match => start from 0..lvl-2, then 0..lvl-3 till it goes to zero (for N's routing table)
+    near_nodeids = nearest_neighbours(needToKnow_nodes, lvl, [])
+    set_newnode_dht(addnode, near_nodeids) # creates the Routing Table for the new node being inserted
+    update_needToKnow_nodesStates(addnode, needToKnow_nodes, lvl) # update RTs of all Need2Know nodes, where necessary.
   end
   
-  def find_closest_entry(addnode, nodeids, i) do
+  def find_closest_entries(addnode, nodeids, i) do
     filterNodeids = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, String.slice(addnode, 0..i)) end)
     if length(filterNodeids) > 0 and i < 15 do
-      find_closest_entry(addnode, filterNodeids, i+1) # increment "lvl", lvl is always 1 more than i.
+      find_closest_entries(addnode, filterNodeids, i+1) # increment "lvl", lvl is always 1 more than i.
     else # i denotes the prefix length that matches
-      close(addnode, nodeids, i, 15, List.first(nodeids)) # max_diff is 15, default closest <= first(nodeids)
+      {nodeids, i+1}
     end
   end
 
-  def close(_, [], i, _, closest) do
-    {closest, i+1} # lvl = i+1
+  def close(_, [], _, _, closest) do
+    closest # lvl = i+1
   end
 
   def close(addnode, [id | nodeids], i, diff, closest) do
@@ -205,8 +240,16 @@ defmodule Proj3.Tapestry do
     end
   end
 
-  def needToKnow_nodes() do
-    
+  def nearest_neighbours([], _, lowlvl_nodes) do
+    lowlvl_nodes
+  end
+
+  def nearest_neighbours([id | nodeids], lvl, lowlvl_nodes) do
+    node_state = Process.whereis(String.to_atom(id)) |> Tapestry.get()
+    lowlvl_nodes = ((Enum.take(node_state[:routing_table], lvl) |> List.flatten) ++ lowlvl_nodes) |> Enum.uniq 
+    # Total 40 levels, indexed 0-39. 
+    # Taken indexes 0..lvl-1
+    nearest_neighbours(nodeids, lvl, lowlvl_nodes)
   end
   ##--Wins--##
 
