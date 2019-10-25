@@ -2,7 +2,7 @@ defmodule Tapestry  do
 use GenServer
 
 def start_link(n) do
-   GenServer.start_link(__MODULE__, %{routing_table: [],nodeid: "", objectpointers: %{}},name: String.to_atom(n) )
+   GenServer.start_link(__MODULE__, %{routing_table: [],nodeid: "", backpointers: %{}},name: String.to_atom(n) )
   
   # get_in(users, ["john", :age])
   # put_in(users.obj["2344"],["a"])

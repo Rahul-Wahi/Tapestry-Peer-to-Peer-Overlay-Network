@@ -23,6 +23,22 @@ defmodule Proj3.Tapestry do
         #IO.inspect nodeids
         #IO.puts "rahul"
         {:ok, _pid} =   MySupervisor.start_link([noOfNodes,numRequests])
+
+        ##--Wins--##
+        # 10% of the nodes will be added later to the network
+        noOfInsertNodes = floor(noOfNodes*0.1)
+        insert_nodeids = if noOfInsertNodes > 0, do: Enum.take_random(nodeids, noOfInsertNodes), else: []
+        IO.inspect insert_nodeids
+        IO.inspect length(insert_nodeids)
+
+        # remaining nodes to add for now
+        nodeids = nodeids -- insert_nodeids
+        IO.inspect nodeids
+        IO.inspect length(nodeids)
+
+        IO.inspect insert_nodes(insert_nodeids, nodeids)
+        ##--Wins--##
+
         set_routing_table(nodeids)
         pid = Process.whereis(String.to_atom(Enum.at(nodeids,0)) )
         Tapestry.route_to_node(pid, Enum.at(nodeids,5))
@@ -152,5 +168,46 @@ defmodule Proj3.Tapestry do
       print_maxhop(1)
     end
   end
+
+  ##--Wins--##
+  def insert_nodes(insert_nodeids, nodeids) do
+    Enum.map(insert_nodeids, fn addnode -> 
+      surrogate_node(addnode, nodeids)
+    end)
+  end
+
+  def surrogate_node(addnode, nodeids) do # multicasts the message for the incoming node
+    find_closest_entry(addnode, nodeids, 0) # Initiating with "lvl 1" match, so i = 0
+  end
+  
+  def find_closest_entry(addnode, nodeids, i) do
+    filterNodeids = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, String.slice(addnode, 0..i)) end)
+    if length(filterNodeids) > 0 and i < 15 do
+      find_closest_entry(addnode, filterNodeids, i+1) # increment "lvl", lvl is always 1 more than i.
+    else # i denotes the prefix length that matches
+      close(addnode, nodeids, i, 15, List.first(nodeids)) # max_diff is 15, default closest <= first(nodeids)
+    end
+  end
+
+  def close(_, [], i, _, closest) do
+    {closest, i+1} # lvl = i+1
+  end
+
+  def close(addnode, [id | nodeids], i, diff, closest) do
+    x = String.to_integer(String.at(addnode, i), 16)
+    y = String.to_integer(String.at(id, i), 16)
+    new_diff = abs(x-y)
+    if new_diff < diff do
+      closest = id
+      close(addnode, nodeids, i, new_diff, closest)
+    else # new_diff >= diff
+      close(addnode, nodeids, i, diff, closest)
+    end
+  end
+
+  def needToKnow_nodes() do
+    
+  end
+  ##--Wins--##
 
 end
