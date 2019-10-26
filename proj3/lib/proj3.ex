@@ -9,7 +9,7 @@ defmodule Proj3.Tapestry do
   def main(args \\ []) do
     
     
-    {_ ,[noOfNodes, numRequests ],_} = OptionParser.parse(args ,  strict: [n: :integer, n: :integer])
+    {_ ,[noOfNodes, numRequests, failure_percentage ],_} = OptionParser.parse(args ,  strict: [n: :integer, n: :integer,n: :integer])
     #case OptionParser.parse(System.argv() ,  strict: [n: :integer, k: String, o: String]) do
   
       #{_ ,[noOfNodes, topology , algorihm],_} -> divideArgAndCallFunc(String.to_integer(a),\\b))  ### For Nodes
@@ -19,14 +19,19 @@ defmodule Proj3.Tapestry do
     
         noOfNodes = String.to_integer(noOfNodes)
         numRequests = String.to_integer(numRequests)
+        failure_percentage = String.to_integer(failure_percentage)
+        noOfFailedNodes = trunc(failure_percentage*noOfNodes/100)
         nodeids = generate_nodeids(noOfNodes) 
+        failedNodes =  failed_nodes_num(nodeids, noOfFailedNodes)
+        
         #IO.inspect nodeids
         #IO.puts "rahul"
-        {:ok, _pid} =   MySupervisor.start_link([noOfNodes,numRequests])
+        {:ok, _pid} =   MySupervisor.start_link([noOfNodes,numRequests, noOfFailedNodes])
         set_routing_table(nodeids)
-        pid = Process.whereis(String.to_atom(Enum.at(nodeids,0)) )
-        Tapestry.route_to_node(pid, Enum.at(nodeids,5))
-        NodeInfo.initiate_requests(noOfNodes, numRequests)
+        kill_random_nodes(failedNodes)
+        #pid = Process.whereis(String.to_atom(Enum.at(nodeids,0)) )
+        #Tapestry.route_to_node(pid, Enum.at(nodeids,5))
+        NodeInfo.initiate_requests(noOfNodes, numRequests, failedNodes)
         
         
        # IO.inspect Tapestry.get(pid)
@@ -35,6 +40,8 @@ defmodule Proj3.Tapestry do
         #IO.puts Enum.at(nodeids,5)
        # Enum.each(nodeids, fn x -> pid = Process.whereis(String.to_atom( x))
         #IO.inspect Tapestry.get(pid) end)
+       # pid = Process.whereis(String.to_atom( Enum.at(nodeids,5)))
+        #IO.inspect Tapestry.get(pid) 
         #:timer.sleep(2000)
         #{_, maxhop_count} = NodeInfo.get()
         #IO.puts "kar na print"
@@ -68,6 +75,24 @@ defmodule Proj3.Tapestry do
 
   #pass string to this method
   
+  defp failed_nodes_num(nodeids,noOfFailedNodes) do
+    Enum.take_random(nodeids, noOfFailedNodes ) 
+  end
+
+  defp kill_random_nodes(failedNodes) do
+     
+    Enum.each(failedNodes , fn failNode -> 
+      pid = Process.whereis(String.to_atom(failNode)) 
+      kill_actor(pid) end)
+ end
+
+ defp kill_actor(pid) do
+    
+  IO.puts "kill"
+  IO.inspect pid
+   Tapestry.kill(pid)
+   
+end
 
   defp generate_nodeids(noOfNodes) do
      
@@ -146,6 +171,7 @@ defmodule Proj3.Tapestry do
 
   def print_maxhop(_condition) do
     {remaining_requests, _maxhop_count} = NodeInfo.get()
+    #IO.inspect NodeInfo.get()
     if remaining_requests >= 0 do
       print_maxhop(0)
     else
