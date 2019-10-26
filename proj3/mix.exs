@@ -10,7 +10,7 @@ defmodule Proj3.MixProject do
       start_permanent: Mix.env == :prod,
       deps: deps(),
       #build_embedded: Mix.env == :prod,
-      escript: escript()
+      #escript: escript()
     ]
   end
 
@@ -22,9 +22,9 @@ defmodule Proj3.MixProject do
       #mod: {Proj3.Tapestry, []}
     ]
   end
-  def escript do
-    [main_module: Proj3.Tapestry]
-  end
+  #def escript do
+   # [main_module: Proj3.Tapestry]
+  #end
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
