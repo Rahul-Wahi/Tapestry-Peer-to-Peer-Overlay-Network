@@ -60,6 +60,7 @@ defmodule Tapestry  do
       if level == 1 do
         nodeids = Enum.at(routing_list,0) #search in level1
         matched_node = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, String.at(destination_nodeid, 0)) end) 
+        matched_node = matched_node ++ node_id
         pid = Process.whereis(String.to_existing_atom((Enum.at(matched_node,0)) ))
        
         GenServer.cast(pid, {:next_hop,1,destination_nodeid, hop_count + 1})
@@ -68,6 +69,7 @@ defmodule Tapestry  do
       else
         nodeids = Enum.at(routing_list,1) #search in level2, if common
         matched_node = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, String.at(destination_nodeid, 0)) end) 
+        matched_node = matched_node ++ node_id
         pid = Process.whereis(String.to_existing_atom((Enum.at(matched_node,0)) ))
         
         GenServer.cast(pid, {:next_hop,1,destination_nodeid, hop_count + 1})
@@ -105,6 +107,7 @@ defmodule Tapestry  do
       
       #find node matching with prefix upto n+1 lenght, as we have to match n+1th charater
       matched_node = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, String.slice(destination_nodeid, 0..n)) end) 
+      matched_node = matched_node ++ node_id
       pid = Process.whereis(String.to_existing_atom((Enum.at(matched_node,0)) ))
       #IO.puts node_id
       #IO.puts "hahaha"
