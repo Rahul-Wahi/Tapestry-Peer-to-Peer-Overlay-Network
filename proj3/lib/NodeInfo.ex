@@ -2,7 +2,7 @@ defmodule NodeInfo do
     use GenServer
 
     def start_link(numNodes,numRequests) do
-        GenServer.start_link(__MODULE__, {numNodes*numRequests,0},name: __MODULE__ )
+        GenServer.start_link(__MODULE__, {numNodes*numRequests,1},name: __MODULE__ )
     end
     def init(state) do
        {:ok, state}
@@ -35,7 +35,7 @@ defmodule NodeInfo do
   
    
     def handle_cast({:done,hop_count},{remaining_requests, maxhop_count}) do
-        IO.puts "Nodeinfo done"
+       
         # Reduce the request count on receivind done message and also updae the max_hop if necessry
        {:noreply, {remaining_requests - 1 , find_max(maxhop_count, hop_count)} }
     end

@@ -26,33 +26,22 @@ defmodule Proj3.Tapestry do
         
         #IO.inspect nodeids
         #IO.puts "rahul"
+        if failure_percentage != 100 do
         {:ok, _pid} =   MySupervisor.start_link([noOfNodes,numRequests, noOfFailedNodes])
         set_routing_table(nodeids)
         kill_random_nodes(failedNodes)
+        NodeInfo.initiate_requests(noOfNodes, numRequests, failedNodes)
+        print_maxhop(noOfNodes,numRequests,0)
+        else
+          IO.puts "All nodes failed"
+        end
+        
         #pid = Process.whereis(String.to_atom(Enum.at(nodeids,0)) )
         #Tapestry.route_to_node(pid, Enum.at(nodeids,5))
-        NodeInfo.initiate_requests(noOfNodes, numRequests, failedNodes)
+       
         
         
-       # IO.inspect Tapestry.get(pid)
-        #pid  = Process.whereis(String.to_atom("C097638F92DE80BA8D6C696B26E6E601A5F61EB7"))
-        #IO.inspect Tapestry.get(pid)
-        #IO.puts Enum.at(nodeids,5)
-       # Enum.each(nodeids, fn x -> pid = Process.whereis(String.to_atom( x))
-        #IO.inspect Tapestry.get(pid) end)
-       # pid = Process.whereis(String.to_atom( Enum.at(nodeids,5)))
-        #IO.inspect Tapestry.get(pid) 
-        #:timer.sleep(2000)
-        #{_, maxhop_count} = NodeInfo.get()
-        #IO.puts "kar na print"
-        #IO.puts maxhop_count
-        print_maxhop(0)
-        #IO.inspect filter_nodeid(nodeids, Enum.at(nodeids,0), 1 , [])
-       # IO.puts String.length(lcp(["ra","aaa"]))
-       #failure_percentage = String.to_integer(failure_percentage)
-        #noOfFailedNodes = trunc(failure_percentage*noOfNodes/100)
-        #algorihm = "gossip"
-        #topology = "line"
+      
         
        
 
@@ -88,9 +77,8 @@ defmodule Proj3.Tapestry do
 
  defp kill_actor(pid) do
     
-  IO.puts "kill"
-  IO.inspect pid
-   Tapestry.kill(pid)
+ 
+  Tapestry.kill(pid)
    
 end
 
@@ -169,11 +157,12 @@ end
     IO.puts maxhop_count
   end
 
-  def print_maxhop(_condition) do
+  @spec print_maxhop(number, number, any) :: :ok
+  def print_maxhop(noOfNodes,numRequests,_condition) do
     {remaining_requests, _maxhop_count} = NodeInfo.get()
-    #IO.inspect NodeInfo.get()
-    if remaining_requests >= 0 do
-      print_maxhop(0)
+    
+    if remaining_requests >= 0.2 * noOfNodes * numRequests do
+      print_maxhop(noOfNodes,numRequests,0)
     else
       print_maxhop(1)
     end

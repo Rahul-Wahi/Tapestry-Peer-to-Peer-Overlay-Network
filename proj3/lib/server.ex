@@ -62,7 +62,7 @@ def handle_cast({:route_to_node,destination_nodeid, hop_count} ,%{routing_table:
   
   level = find_level(destination_nodeid,node_id)
   if level == 1 do
-    IO.puts "route_to_node1"
+    
     nodeids = Enum.at(routing_list,0) #search in level1
     {destination_nodeid_digit,_}  = Integer.parse(String.at(destination_nodeid, 0) , 16)
     matched_node = find_closest_digit_node(destination_nodeid_digit,nodeids, 0 , 0)
@@ -112,7 +112,7 @@ def handle_cast({:next_hop, n, destination_nodeid, hop_count} ,%{routing_table: 
   nodeids = Enum.at(routing_list,n) 
   if node_id != destination_nodeid && n < 40 && length(nodeids) > 0 do
     #search in level n+1 for finding the next hop
-    IO.puts "inside please finish"
+    
     #find node matching with prefix upto n+1 lenght, as we have to match n+1th charater
     #matched_node = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, String.slice(destination_nodeid, 0..n)) end) 
     {destination_nodeid_digit,_}  = Integer.parse(String.at(destination_nodeid, 0) , 16)
@@ -120,12 +120,11 @@ def handle_cast({:next_hop, n, destination_nodeid, hop_count} ,%{routing_table: 
     #matched_node = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, String.at(destination_nodeid, 0)) end) 
     matched_node = matched_node ++ [node_id]
     pid = Process.whereis(String.to_existing_atom((Enum.at(matched_node,0)) ))
-    IO.puts node_id
-    IO.puts "hahaha"
+   
     GenServer.cast(pid, {:next_hop,n+1,destination_nodeid , hop_count + 1})
     {:noreply,state }
   else
-    IO.puts "Node done"
+    
     NodeInfo.done( hop_count + 1 )
     {:noreply,state }
   end
