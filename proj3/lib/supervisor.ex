@@ -9,7 +9,7 @@ defmodule MySupervisor do
   end
 
   # arg1: numNodes, arg2: numRequest
-  def init([arg1, arg2, arg3]) do
+  def init([arg1, arg2]) do
     
     children = Enum.map(1..arg1, fn(n) ->
 
@@ -19,7 +19,7 @@ defmodule MySupervisor do
 
     end)
 
-    children = children ++ [worker(NodeInfo , [arg1-arg3, arg2] , [id: NodeInfo, restart: :transient, shutdown: :infinity])]
+    children = children ++ [worker(NodeInfo , [arg1, arg2] , [id: NodeInfo, restart: :transient, shutdown: :infinity])]
 
     #children = children ++ [worker(NodeInfo , [] , [id: NodeInfo, restart: :transient, shutdown: :infinity])]
 

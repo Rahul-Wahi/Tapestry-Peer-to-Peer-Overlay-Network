@@ -11,15 +11,12 @@ defmodule NodeInfo do
     def get() do  
         GenServer.call(__MODULE__, :get, :infinity)
       end
-    def initiate_requests(numNodes, numRequests, failedNodes) do
+    def initiate_requests(numNodes, numRequests) do
         
-        nodeids = Enum.map(1..numNodes, fn n ->
-             Generic.generate_id(Integer.to_string(n)) end )
-        nodeids = nodeids -- failedNodes 
-        Enum.each(nodeids, fn nodeid ->
+        Enum.each(1..numNodes, fn n ->
+            nodeid = Generic.generate_id(Integer.to_string(n))
             pid = Process.whereis(String.to_existing_atom(nodeid ))
-            
-           # IO.inspect Tapestry.get(pid)
+
             Tapestry.send_to_nodes( pid , numNodes , numRequests )
           end
             )
@@ -35,7 +32,6 @@ defmodule NodeInfo do
   
    
     def handle_cast({:done,hop_count},{remaining_requests, maxhop_count}) do
-        IO.puts "Nodeinfo done"
         # Reduce the request count on receivind done message and also updae the max_hop if necessry
        {:noreply, {remaining_requests - 1 , find_max(maxhop_count, hop_count)} }
     end
