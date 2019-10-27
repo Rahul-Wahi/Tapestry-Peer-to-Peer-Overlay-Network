@@ -161,7 +161,7 @@ end
   def print_maxhop(noOfNodes,numRequests,_condition) do
     {remaining_requests, _maxhop_count} = NodeInfo.get()
     
-    if remaining_requests >= 0.2 * noOfNodes * numRequests do
+    if remaining_requests > 0 do
       print_maxhop(noOfNodes,numRequests,0)
     else
       print_maxhop(1)

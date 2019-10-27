@@ -29,6 +29,8 @@ defmodule NodeInfo do
     #Tapsetry nodes will use this function to send done requests
     #to nodeinfo, and will send the  counts of hops for routing to a node
     def done(hop_count) do
+        
+       # IO.puts "Done"
        GenServer.cast(__MODULE__, {:done,hop_count})
     end
 
@@ -36,6 +38,7 @@ defmodule NodeInfo do
    
     def handle_cast({:done,hop_count},{remaining_requests, maxhop_count}) do
        
+        #IO.puts "YDone"
         # Reduce the request count on receivind done message and also updae the max_hop if necessry
        {:noreply, {remaining_requests - 1 , find_max(maxhop_count, hop_count)} }
     end

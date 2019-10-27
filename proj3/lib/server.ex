@@ -60,29 +60,38 @@ end
 #to add neighbours to the existing list
 def handle_cast({:route_to_node,destination_nodeid, hop_count} ,%{routing_table: routing_list, nodeid: node_id } = state) do
   
+  
   level = find_level(destination_nodeid,node_id)
-  if level == 1 do
+  #IO.puts "RouteAfter #{level} #{destination_nodeid} #{node_id}"
+  cond do
     
+    level == 1 ->
     nodeids = Enum.at(routing_list,0) #search in level1
     {destination_nodeid_digit,_}  = Integer.parse(String.at(destination_nodeid, 0) , 16)
     matched_node = find_closest_digit_node(destination_nodeid_digit,nodeids, 0 , 0)
     #matched_node = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, String.at(destination_nodeid, 0)) end) 
     matched_node = matched_node ++ [node_id]
+    #IO.puts "next_hop1  nodeid #{node_id} Dest #{destination_nodeid}"
     pid = Process.whereis(String.to_existing_atom((Enum.at(matched_node,0)) ))
-   
+    #IO.inspect pid
+    
     GenServer.cast(pid, {:next_hop,1,destination_nodeid, hop_count + 1})
   
     
-  else
+    level != 40 ->
     nodeids = Enum.at(routing_list,1) #search in level2, if common
     {destination_nodeid_digit,_}  = Integer.parse(String.at(destination_nodeid, 0) , 16)
     matched_node = find_closest_digit_node(destination_nodeid_digit,nodeids, 0 , 0)
     matched_node = matched_node ++ [node_id]
+    
     #matched_node = Enum.filter(nodeids, fn nodeid -> String.starts_with?(nodeid, String.at(destination_nodeid, 0)) end) 
     pid = Process.whereis(String.to_existing_atom((Enum.at(matched_node,0)) ))
     
     GenServer.cast(pid, {:next_hop,1,destination_nodeid, hop_count + 1})
     
+    level == 40 ->
+      
+      NodeInfo.done( 1 )
   end 
   {:noreply, state }
   
@@ -106,9 +115,9 @@ end
 
 #function to find the next hop and send message to continue the process
 #n : previous hop number, destination_node: node to be reached 
-def handle_cast({:next_hop, n, destination_nodeid, hop_count} ,%{routing_table: routing_list, nodeid: node_id} = state) do
+def handle_cast({:next_hop, n, destination_nodeid, hop_count} ,%{routing_table: routing_list, nodeid: node_id} = state ) do
 
-  #IO.puts "next_hop #{destination_nodeid} #{node_id} "
+  #IO.puts "1next_hop, destination_nodeid #{destination_nodeid}, nodeid #{node_id} , n #{n} , hop_count #{hop_count}  "
   nodeids = Enum.at(routing_list,n) 
   if node_id != destination_nodeid && n < 40 && length(nodeids) > 0 do
     #search in level n+1 for finding the next hop
@@ -122,11 +131,11 @@ def handle_cast({:next_hop, n, destination_nodeid, hop_count} ,%{routing_table: 
     pid = Process.whereis(String.to_existing_atom((Enum.at(matched_node,0)) ))
    
     GenServer.cast(pid, {:next_hop,n+1,destination_nodeid , hop_count + 1})
-    {:noreply,state }
+    {:noreply,state, :infinity }
   else
-    
+    #IO.puts "Done next_hop, destination_nodeid #{destination_nodeid}, nodeid #{node_id} , n #{n} , hop_count #{hop_count}  "
     NodeInfo.done( hop_count + 1 )
-    {:noreply,state }
+    {:noreply,state  , :infinity}
   end
 
 end
@@ -160,17 +169,18 @@ end
 #to remove nodeids which are dead or nill
 defp filter_nodeids(list) do
   
-  Enum.filter(list, fn x -> Process.whereis(String.to_atom( x)) != nil end)
+  Enum.filter(list, fn x -> Process.whereis(String.to_existing_atom( x)) != nil end)
 end
 
 #find level for searching the next hop
 defp find_level(objectid,nodeid) do
   
-  index = Enum.find_index(0..String.length(objectid), fn i -> String.at(objectid,i) != String.at(nodeid,i) end)
+  
   #IO.puts "Index #{index}"
   if objectid == nodeid do
     40
   else
+    index = Enum.find_index(0..String.length(objectid), fn i -> String.at(objectid,i) != String.at(nodeid,i) end)
     index+1
   end
   
@@ -179,6 +189,7 @@ end
 
 defp find_closest_digit_node(objectid_digit,nodeids, position , count ) when count >= 16 do
   
+  nodeids = filter_nodeids(nodeids)
   #node_digit  = Integer.parse(String.at(nodeid, position) , 16) #hex digit string to integer decima
   object_digithex =  Integer.to_string(objectid_digit, 16) #decimal to hex string
   Enum.filter(nodeids, fn nodeid -> String.at(nodeid, position) == object_digithex end) 
@@ -187,6 +198,7 @@ end
 
 defp find_closest_digit_node(objectid_digit,nodeids, position , count ) do
   
+  nodeids = filter_nodeids(nodeids)
   #node_digit  = Integer.parse(String.at(nodeid, position) , 16) #hex digit string to integer decima
   object_digithex =  Integer.to_string(objectid_digit, 16) #decimal to hex string
   matched_node = Enum.filter(nodeids, fn nodeid -> String.at(nodeid, position) == object_digithex end) 
