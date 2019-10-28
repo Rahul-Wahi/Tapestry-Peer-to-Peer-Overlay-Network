@@ -3,8 +3,6 @@ defmodule Proj3.Tapestry do
   # for more information on OTP Applications
   @moduledoc false
 
-  #use Application
-  #use Topologies
   import Supervisor, warn: false
   def main(args \\ []) do
     
